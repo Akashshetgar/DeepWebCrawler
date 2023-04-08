@@ -12,7 +12,9 @@ links_graph = Graph("bolt://localhost:7687", auth=("neo4j", "User@123"))
 onion_pattern = re.compile(r"http(s)?://[a-z2-7]{16}\.onion(/[a-zA-Z0-9-._~%!$&'()*+,;=]*)?")
 
 onion_seeds = [
-    "http://xmh57jrknzkhv6y3ls3ubitzfqnkrwxhopf5aygthi7d6rplyvk3noyd.onion/cgi-bin/omega/omega",
+    "http://gkcns4d3453llqjrksxdijfmmdjpqsykt6misgojxlhsnpivtl3uwhqd.onion/"
+    #anime site "http://xi5q6pwggnggxzaq4xdpyvwunwihq5zrwudjlxyk2ryy35wdsvioljyd.onion/"
+    #"http://xmh57jrknzkhv6y3ls3ubitzfqnkrwxhopf5aygthi7d6rplyvk3noyd.onion/cgi-bin/omega/omega",
     # "http://catalogpwwlccc5nyp3m3xng6pdx3rdcknul57x6raxwf4enpw3nymqd.onion/"
     ]
 
@@ -49,11 +51,11 @@ def torSearcher(url):
 
 def crawl_onion_links():
     # Get unvisited onion links from Neo4j database
-    query = """
-        MATCH (link:Link {status: 'unvisited'})
-        RETURN link.url AS url
-    """
-    results = links_graph.run(query)
+    # query = """
+    #     MATCH (link:Link {status: 'unvisited'})
+    #     RETURN link.url AS url
+    # """
+    # results = links_graph.run(query)
 
     for onion_link in onion_seeds:
        
@@ -61,26 +63,25 @@ def crawl_onion_links():
         try:
             # Make a request to the onion link
             response = torSearcher(onion_link)
-
-            # print(str(response.text))
+            print(str(response.text))
             # resp = str(response.text)
             # P
             
             soup = BeautifulSoup(response.text, "html.parser")
 
             text = str(soup.get_text()).strip().replace("\n", " ")
-            print(text)
+            #print(text)
 
-            query = """MATCH (link:Link ) 
-                WHERE link.url = {onion_link}
-                link.url""".format(onion_link= onion_link)
+            # query = """MATCH (link:Link ) 
+            #     WHERE link.url = {onion_link}
+            #     link.url""".format(onion_link= onion_link)
 
-            resp = links_graph.run(query, onion_link=onion_link, response=text)
+            # resp = links_graph.run(query, onion_link=onion_link, response=text)
 
-            node = resp.evaluate()
-            node['url'] = onion_link
-            node['text'] = text
-            node.push()
+            # node = resp.evaluate()
+            # node['url'] = onion_link
+            # node['text'] = text
+            # node.push()
             # Find all links in the HTML
             links = soup.find_all("a")
             # Extract the link text and URL for each link
@@ -89,43 +90,44 @@ def crawl_onion_links():
                 link_text = link.get_text()
                 link_url = link.get("href")
                 link_info.append((link_text, link_url))
+                print(link_info)
 
-            for item in link_info:
-                # Extract the link text and URL
-                link_text = item[0]
-                link_url = item[1]
-                # Check if the link is a valid onion link
-                if link_url and onion_pattern.match(link_url):
-                    # Check if the link is already in the database
-                    query = """
-                        MATCH (link:Link)
-                        WHERE link.url = {link_url}
-                        RETURN link.url
-                    """.format(link_url=link_url)
-                    results = links_graph.run(query, link_url=link_url)
-                    if results.data():
-                        # Link already exists in the database
-                        pass
-                    else:
-                        # Link does not exist in the database
-                        # Add the link to the database
-                        # query = """
-                        #     MERGE (link:Link {url: {link_url}})
-                        #     ON CREATE SET link.name = {link_text} AND link.status = 'unvisited'
-                        #     RETURN link.name, link.url
-                        # """
-                        # results = links_graph.run(query, link_text=link_text, link_url=link_url)
-                        new_link = Node("Link", url=link_url, name=link_text, status="unvisited")
-                        links_graph.create(new_link)
+            # for item in link_info:
+            #     # Extract the link text and URL
+            #     link_text = item[0]
+            #     link_url = item[1]
+            #     # Check if the link is a valid onion link
+            #     if link_url and onion_pattern.match(link_url):
+            #         # Check if the link is already in the database
+            #         query = """
+            #             MATCH (link:Link)
+            #             WHERE link.url = {link_url}
+            #             RETURN link.url
+            #         """.format(link_url=link_url)
+            #         results = links_graph.run(query, link_url=link_url)
+            #         if results.data():
+            #             # Link already exists in the database
+            #             pass
+            #         else:
+            #             # Link does not exist in the database
+            #             # Add the link to the database
+            #             # query = """
+            #             #     MERGE (link:Link {url: {link_url}})
+            #             #     ON CREATE SET link.name = {link_text} AND link.status = 'unvisited'
+            #             #     RETURN link.name, link.url
+            #             # """
+            #             # results = links_graph.run(query, link_text=link_text, link_url=link_url)
+            #             new_link = Node("Link", url=link_url, name=link_text, status="unvisited")
+            #             links_graph.create(new_link)
 
-                        # Create a relationship between the onion link and the new link
-                        query = """
-                            MATCH (link1:Link), (link2:Link)
-                            WHERE link1.url = {onion_link} AND link2.url = {link_url}
-                            MERGE (link1)-[r:LINKS_TO]->(link2)
-                            RETURN link1.name, link2.name
-                        """.format(onion_link=onion_link, link_url=link_url)
-                        results = links_graph.run(query, onion_link=onion_link, link_url=link_url)
+            #             # Create a relationship between the onion link and the new link
+            #             query = """
+            #                 MATCH (link1:Link), (link2:Link)
+            #                 WHERE link1.url = {onion_link} AND link2.url = {link_url}
+            #                 MERGE (link1)-[r:LINKS_TO]->(link2)
+            #                 RETURN link1.name, link2.name
+            #             """.format(onion_link=onion_link, link_url=link_url)
+            #             results = links_graph.run(query, onion_link=onion_link, link_url=link_url)
 
         except Exception as e:
             
